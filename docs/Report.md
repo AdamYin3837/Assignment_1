@@ -6,12 +6,16 @@ Group 0x05 - Adam Yin
 ## References
 [1] Valgrind Developers. (2025, Oct. 24). *Valgrind User Manual* [Online]. Available: 
 https://valgrind.org/docs/manual/manual.html
+
 [2] S. Knudsen. "ECE 407 Lecture 7 W2026." [Online]. Available: 
 https://canvas.ualberta.ca/courses/30117/files/7164528?module_item_id=3593950 [Accessed Feb. 23, 2026].
+
 [3] S. Knudsen. "ECE 407 Lecture 8 W2026." [Online]. Available: 
 https://canvas.ualberta.ca/courses/30117/files/7217285?module_item_id=3602940 [Accessed Feb. 23, 2026].
+
 [4] S. Knudsen. "ECE 407 Lecture 9 W2026." [Online]. Available: 
 https://canvas.ualberta.ca/courses/30117/files/7221212?module_item_id=3603239 [Accessed Feb. 23, 2026].
+
 [5] Raspberry Pi Ltd. (2025, Feb. 20). *RP2040 Datasheet* [Online]. Available: 
 https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
 
