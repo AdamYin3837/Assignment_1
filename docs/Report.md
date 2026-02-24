@@ -4,27 +4,28 @@
 Group 0x05 - Adam Yin
 
 ## References
-1. "Valgrind User Manual," Valgrind.org. [Online]. Available: https://valgrind.org/docs/manual/manual.html. [Accessed: Feb. 23, 2026].
-2. "Debugging with GDB," Sourceware.org. [Online]. Available: https://sourceware.org/gdb/current/onlinedocs/gdb.html. [Accessed: Feb. 23, 2026].
-3. "RP2040 Datasheet," Raspberry Pi Ltd. [Online]. Available: https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf. [Accessed: Feb. 23, 2026].
+[1] Valgrind Developers. (2025, Oct. 24). *Valgrind User Manual* [Online]. Available: 
+https://valgrind.org/docs/manual/manual.html
+[2] S. Knudsen. "ECE 407 Lecture 7 W2026." [Online]. Available: 
+https://canvas.ualberta.ca/courses/30117/files/7164528?module_item_id=3593950 [Accessed Feb. 23, 2026].
+[3] S. Knudsen. "ECE 407 Lecture 8 W2026." [Online]. Available: 
+https://canvas.ualberta.ca/courses/30117/files/7217285?module_item_id=3602940 [Accessed Feb. 23, 2026].
+[4] S. Knudsen. "ECE 407 Lecture 9 W2026." [Online]. Available: 
+https://canvas.ualberta.ca/courses/30117/files/7221212?module_item_id=3603239 [Accessed Feb. 23, 2026].
+[5] Raspberry Pi Ltd. (2025, Feb. 20). *RP2040 Datasheet* [Online]. Available: 
+https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
 
 ## Purpose
-The purpose of this assignment is to:
-- Practically investigate memory management in C by intentionally creating, identifying, and debugging memory leaks and corruption.
-- Contrast how memory is handled dynamically on a standard Linux environment using tools like GDB and Valgrind, versus how that same code's memory is statically organized on an embedded system (the Raspberry Pi Pico).
+The purpose of this assignment is twofold:
+- To investigate memory management in C by intentionally creating, identifying, and debugging memory leaks and corruption.
+- To constrast how dynamic memory is handled on a standard Linux environment (using GDB and Valgrind) with how memory is statically organized on an embedded system (the Raspberry Pi Pico).
 
 ## Introduction
-In desktop environments:
-- Memory leaks consume swap space and RAM, degrading performance but often resolved when the OS reclaims memory upon program termination.
+In desktop environments, memory leaks typically consume swap space and RAM, degrading system performance. However, these issues are ultimately mitigated because the operating system reclaims all allocated memory upon program termination.
 
-In embedded systems development:
-- Resources are heavily constrained.
-- A microcontroller like the RP2040 lacks an OS to clean up leaked memory and a MMU (Memory Management Unit) to protect against buffer overflows.
+Conversely, in embedded systems development, hardware resources are heavily constrained. A microcontroller like the RP2040 operates without an underlying OS to automatically clean up leaked memory, and it lacks a Memory Management Unit (MMU) to protect against buffer overflows and memory corruption. Because embedded systems are expected to run continuously without intervention, even a minor memory leak can lead to severe failure.
 
-Understanding how to:
-- Track heap allocations.
-- Prevent buffer overruns.
-- Analyze memory maps is critical for writing safe, deterministic, and crash-free embedded firmware.
+Therefore, mastering the ability to track heap allocations, prevent buffer overruns, and analyze system memory maps is important for engineers to write safe and crash-free embedded firmware.
 
 ## Pico Memory
 
