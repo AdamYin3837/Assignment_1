@@ -13,14 +13,10 @@ void overflow_example() {
 }
 
 void leak_two() {
-    // 第一次分配：要了 80 bytes (20 * 4) 的記憶體，交給 ptr
     int *ptr = malloc(20 * sizeof(int)); 
     
-    // 問題發生在這裡！我們沒有 free(ptr)，就直接讓 ptr 指向新的記憶體
     ptr = malloc(10 * sizeof(int)); // 第二次分配：要了 40 bytes
     
-    // 我們雖然乖乖寫了 free，但這只會釋放「第二次」要到的 40 bytes
-    // 第一次要到的 80 bytes 已經徹底失去了指標，變成絕對的 Memory Leak (Lost Pointer)
     free(ptr); 
 }
 
