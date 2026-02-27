@@ -31,57 +31,41 @@ Conversely, in embedded systems development, hardware resources are heavily cons
 
 Therefore, mastering the ability to track heap allocations, prevent buffer overruns, and analyze system memory maps is important for engineers to write safe and crash-free embedded firmware.
 
-## Pico Memory
+## Pico Memory (Cross-Compilation & Memory Analysis)
+In this section, we cross-compiled the C program for the Raspberry Pi Pico (an ARM Cortex-M0+ microcontroller) to observe how the code is translated and mapped to physical memory.
 
-### Memory Map Analysis (pico_flash_region.ld)
-- **Flash (ROM):** [Insert your analysis here. Example: The .ld file shows the Flash memory begins at 0x10000000. This is where the .text section (our executable code) and .rodata (read-only data, like string literals) are stored.]
-- **SRAM (RAM):** [Insert your analysis here. Example: SRAM begins at 0x20000000. This holds our .data (initialized variables) and .bss (uninitialized variables) sections, as well as the heap and stack.]
+**1. Pico Memory Map (`.ld` Linker Script)**
+The linker script defines the physical memory layout of the Pico. As shown in the generated `pico_flash_region.ld` file, the Pico has a specific region dedicated to FLASH memory:
+* `FLASH(rx) : ORIGIN = 0x10000000, LENGTH = (2 * 1024 * 1024)`
 
-### Disassembly Analysis (memory.dis)
-- [Insert your analysis here. Example: Looking at memory.dis, we can see how our functions map to specific memory addresses in the Flash memory. We can also see the exact ARM Cortex-M0+ assembly instructions generated for our memory leak functions.]
+This indicates that the executable read-only memory starts exactly at the absolute address `0x10000000` and has a size of 2MB. 
 
-### Relevance to Memory Investigations
-- This static analysis reveals the exact physical limits of our embedded hardware.
-- While Valgrind on a PC simulates a massive virtual memory space, the Pico map shows exactly how little heap is available.
-- A buffer overflow that corrupts the stack here will directly overwrite hardware registers or the return address in SRAM, leading to an immediate hard fault rather than a simple segmentation fault.
+**2. ARM Assembly & Memory Allocation (`.dis` Disassembly)**
+By examining the disassembly file `pico_memory.dis`, we can verify that our standard C code has been successfully translated into ARM assembly language.
+* For instance, the `<main>:` function begins with the instruction `push {r4, lr}`. The use of specific hardware registers like `r4` and `lr` confirms the ARM architecture.
+* More importantly, the memory address assigned to the `<main>:` function is `100002d4`. This address falls perfectly within the `0x10000000` range defined in the linker script. This proves that the cross-compiler and linker accurately placed our program's instructions into the Pico's physical FLASH memory.
 
 ## C Program with Memory Problems
+To demonstrate common memory management errors, three distinct memory issues were simulated and debugged using Valgrind and GDB.
 
-### Problem #1: Unfreed Memory Allocation
-- **The Problem:** [Explain the code. Example: In this test case (--LEAK 1), the program allocates 100 bytes on the heap using malloc(), but the function returns without calling free(). The pointer is lost when it goes out of scope.]
-- **GDB Session & Valgrind Analysis:**
-    - **GDB:** [Insert screenshot or transcript of stepping through GDB, showing the malloc execution]
-    - **Valgrind:** [Insert screenshot/transcript of Valgrind output showing "definitely lost: 100 bytes in 1 blocks".]
-- **How to Avoid:** Always ensure every malloc() or calloc() has a corresponding free(). In embedded systems, it is often best practice to avoid dynamic memory allocation entirely, relying instead on static allocation to guarantee memory safety.
+### Problem 1: Heap Leak (`--LEAK 1`)
+A standard memory leak occurs when dynamically allocated memory is never freed.
+* **Implementation:** 40 bytes (10 integers) were allocated using `malloc()`, but `free()` was never called before the function returned.
+* **Valgrind Analysis:** Valgrind clearly caught this issue, reporting `40 bytes in 1 blocks are definitely lost` in the `leak_one` function.
+* **GDB Inspection:** Using GDB, we stepped through the code and observed the pointer `ptr` receiving the allocated memory address (`0xaaaaaaab22a0`). Since we lost track of this address without freeing it, the memory remains occupied indefinitely.
 
-### Problem #2: Lost Pointer Reassignment
-- **The Problem:** [Explain the code. Example: In --LEAK 2, a pointer is assigned a block of memory, but then immediately reassigned a new block of memory before the first is freed. The first block is orphaned.]
-- **GDB Session & Valgrind Analysis:**
-    - **GDB:** [Insert transcript showing the pointer address changing, leaving the old address unreferenced.]
-    - **Valgrind:** [Insert Valgrind output showing the specific leak summary.]
-- **How to Avoid:** Track pointer lifecycles carefully. If a pointer needs to be reassigned, ensure `free(ptr)` is called before `ptr = malloc(new_size)`, or utilize `realloc()` if resizing an existing buffer.
+### Problem 2: Buffer Overflow (`--LEAK 2`)
+A buffer overflow happens when data is written past the boundary of the allocated memory array.
+* **Implementation:** We created a 5-byte character array but used `strcpy` to force a much longer string ("This string is way too long!") into it, corrupting the adjacent memory.
+* **GDB & Stack Canary Analysis:** In GDB, the program does not crash immediately upon executing `strcpy`. However, the moment the program executes the closing brace `}` to return from the function, the OS stack canary mechanism kicks in. It detects that the stack has been smashed and immediately terminates the program, resulting in a `SIGABRT` signal.
 
-### Problem #3: Buffer Overflow
-- **The Problem:** [Explain the code. Example: In --LEAK 3, a local array of 10 integers is declared on the stack. A for loop incorrectly iterates 15 times, writing data past the end of the array and corrupting adjacent stack memory.]
-- **GDB Session & Valgrind Analysis:**
-    - **GDB:** [Insert transcript showing the stack frame variables changing unexpectedly due to the overflow.]
-    - **Valgrind:** [Insert Valgrind output showing "Invalid write of size 4" or similar memory corruption errors.]
-- **How to Avoid:** Always enforce strict bounds checking on loops and array indices. When using standard library functions, prefer safe alternatives (e.g., `strncpy` instead of `strcpy`, or `snprintf` instead of `sprintf`).
+### Problem 3: Lost Pointer (`--LEAK 3`)
+A lost pointer occurs when a pointer holding a valid memory address is overwritten with a new address, turning the original memory block into an inaccessible orphan.
+* **Implementation:** We allocated 80 bytes (20 integers) to `ptr`. Then, without freeing it, we reassigned `ptr` to a new 40-byte allocation. Calling `free(ptr)` at the end only frees the *second* allocation.
+* **GDB Evidence:** GDB explicitly shows the exact moment the pointer is lost. After the first allocation, `ptr` points to `0xaaaaaaab22a0`. After the second allocation, the address inside `ptr` is overwritten to `0xaaaaaaab2300`. The original `0xaaaaaaab22a0` address is gone forever.
+* **Valgrind Analysis:** Valgrind confirms that the original `80 bytes` are `definitely lost` at line 17, validating our lost pointer theory.
 
 ## Conclusion
-This assignment demonstrated:
-- How easily memory leaks and corruption can occur in C.
-- How tools like GDB and Valgrind are essential for tracing them.
+This assignment practically demonstrated the critical importance of memory management in C programming. By utilizing tools like Valgrind and GDB, we could visualize invisible memory operations, trace exact crash points, and intercept stack-smashing events. 
 
-In a Linux environment:
-- These errors might go unnoticed until the program consumes all available RAM or segfaults.
-
-In embedded systems:
-- As evidenced by analyzing the memory map of the Raspberry Pi Pico, embedded systems have strict physical memory boundaries.
-- A buffer overflow on the Pico is catastrophic.
-
-To manage and avoid these problems:
-- Minimize dynamic heap allocation.
-- Utilize static analysis tools.
-- Carefully track pointer lifecycles.
-- Rigorously enforce bounds checking on all arrays.
+Furthermore, cross-compiling the code for the Raspberry Pi Pico highlighted the vast differences between development environments. While a PC operating system has robust protections (like stack canaries) and gigabytes of RAM to forgive small memory leaks, a microcontroller operates on bare metal with extremely limited resources (e.g., 264KB of SRAM). On such embedded systems, even minor leaks or overflows—like the 40 bytes lost in our example—can rapidly drain the system memory and cause catastrophic failures. Proper memory handling is not just a coding standard; it is a vital necessity for system stability.
