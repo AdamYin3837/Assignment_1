@@ -15,7 +15,7 @@ void overflow_example() {
 void leak_two() {
     int *ptr = malloc(20 * sizeof(int)); 
     
-    ptr = malloc(10 * sizeof(int)); // 第二次分配：要了 40 bytes
+    ptr = malloc(10 * sizeof(int));
     
     free(ptr); 
 }
