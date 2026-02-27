@@ -57,6 +57,7 @@ A standard memory leak occurs when dynamically allocated memory is never freed.
 ### Problem 2: Buffer Overflow (`--LEAK 2`)
 A buffer overflow happens when data is written past the boundary of the allocated memory array.
 * **Implementation:** We created a 5-byte character array but used `strcpy` to force a much longer string into it, corrupting the adjacent memory.
+* **Valgrind Analysis:** When running the program through Valgrind, it successfully intercepted the memory corruption, outputting `*** stack smashing detected ***: terminated`. Valgrind immediately halted the process with a `SIGABRT` signal and pinpointed the crash exactly to the `overflow_example` function.
 * **GDB & Stack Canary Analysis:** In GDB, the program does not crash immediately upon executing `strcpy`. However, the moment the program executes the closing brace `}` to return from the function, the OS stack canary mechanism kicks in. It detects that the stack has been smashed and immediately terminates the program, resulting in a `SIGABRT` signal.
 
 ### Problem 3: Lost Pointer (`--LEAK 3`)
