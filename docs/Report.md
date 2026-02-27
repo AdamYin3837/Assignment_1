@@ -56,13 +56,13 @@ A standard memory leak occurs when dynamically allocated memory is never freed.
 
 ### Problem 2: Buffer Overflow (`--LEAK 2`)
 A buffer overflow happens when data is written past the boundary of the allocated memory array.
-* **Implementation:** We created a 5-byte character array but used `strcpy` to force a much longer string ("This string is way too long!") into it, corrupting the adjacent memory.
+* **Implementation:** We created a 5-byte character array but used `strcpy` to force a much longer string into it, corrupting the adjacent memory.
 * **GDB & Stack Canary Analysis:** In GDB, the program does not crash immediately upon executing `strcpy`. However, the moment the program executes the closing brace `}` to return from the function, the OS stack canary mechanism kicks in. It detects that the stack has been smashed and immediately terminates the program, resulting in a `SIGABRT` signal.
 
 ### Problem 3: Lost Pointer (`--LEAK 3`)
-A lost pointer occurs when a pointer holding a valid memory address is overwritten with a new address, turning the original memory block into an inaccessible orphan.
+A lost pointer occurs when a pointer holding a valid memory address is overwritten with a new address, turning the original memory block inaccessible.
 * **Implementation:** We allocated 80 bytes (20 integers) to `ptr`. Then, without freeing it, we reassigned `ptr` to a new 40-byte allocation. Calling `free(ptr)` at the end only frees the *second* allocation.
-* **GDB Evidence:** GDB explicitly shows the exact moment the pointer is lost. After the first allocation, `ptr` points to `0xaaaaaaab22a0`. After the second allocation, the address inside `ptr` is overwritten to `0xaaaaaaab2300`. The original `0xaaaaaaab22a0` address is gone forever.
+* **GDB Inspection:** GDB explicitly shows the exact moment the pointer is lost. After the first allocation, `ptr` points to `0xaaaaaaab22a0`. After the second allocation, the address inside `ptr` is overwritten to `0xaaaaaaab2300`. The original `0xaaaaaaab22a0` address is gone forever.
 * **Valgrind Analysis:** Valgrind confirms that the original `80 bytes` are `definitely lost` at line 17, validating our lost pointer theory.
 
 ## Conclusion
